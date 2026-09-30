@@ -42,6 +42,8 @@ How many 911 call takers, starting when? Built on Anton's hourly call forecast (
 Run from the repo root: `python3 dispatcher_scheduling_proposal.py` (charts), then `python3 make_proposal_pdf.py` (needs `reportlab`).
 Full write-up: [`OPD_911_Call_Taker_Scheduling_Proposal.pdf`](OPD_911_Call_Taker_Scheduling_Proposal.pdf).
 
+**Revision 2 (Sep 30).** Units clarified: a "call taker" is the City Auditor's estimate of 911-allocated call takers (Exhibit 19: total minimum staffing minus 4 radio/service-desk positions, halved), so hires may be up to ~2x as many dispatchers; the "fits inside 12 open positions" claim was removed until OPD's roster settles it. The headline is now +4.4 FTE (range +4 to +6, depending on the two calibrated assumptions). The forecast file is Anton's final back-test; the script warns if its P90 miss rate no longer matches his 8.5%. Known gap: Anton's shift-peak forecasts are not yet used.
+
 | Chart | Shows |
 |---|---|
 | `sched_0_forecast_shape.png` | The daily call curve from the forecast, weekday vs weekend, with the P90 band. |

@@ -13,7 +13,13 @@ CURRENT City Auditor audit, Exhibit 19: estimated minimum 911 call takers by hou
 OFFICERS opd_patrol_officers_by_shift_day.csv (OPD staffing reports / 2023 watch-schedule memo), first and last
        hour of each shift excluded (line-up / paperwork).
 
-Two scenarios (assumptions to replace with OPD data when it arrives):
+UNITS  "Call taker" = the City Auditor's estimate of 911-allocated call takers in Exhibit 19: total minimum staffing
+       minus 4 radio/service-desk positions, divided by 2 (the audit's own note under the exhibit). Radio and
+       service-desk positions are not modeled. One added "call taker" can therefore mean up to ~2 dispatcher hires if
+       OPD keeps staffing the non-emergency lines at the same ratio; OPD's roster would settle this.
+
+Two scenarios (assumptions to replace with OPD data when it arrives; chosen so today's schedule gives ~77%, in line
+with the 73-79% measured Jan-Jul 2026, so they are calibrated, not independently validated):
   FLOOR     AHT 116 s, no after-call work, staff answer 100% of their shift.
   PLANNING  AHT 116 s + 30 s after-call work (CAD entry before the next call), 30% shrinkage
             (breaks, meals, training, leave; typical contact-center range 25-35%).
@@ -81,8 +87,19 @@ def required(calls_hr, aht, shrink):
 
 # --- Data -------------------------------------------------------------------------------------
 
+# Anton's final model (NB GLM, selected feature groups, dispersion by hour), back-test Jul 2025 - Jun 2026.
+# The cache holds 62 hash-named back-test files; this one is identified by matching his notebook summary
+# (P90 exceeded in 8.5% of hours). If Anton re-runs with different settings the hash changes: update it.
+FORECAST_FILE = "cache/bt_glm_a36ba550a4.pkl"
+ANTON_P90_EXCEEDED = 0.085
+
+
 def load_demand():
-    f = pd.read_pickle(OPD / "cache/bt_glm_a36ba550a4.pkl")["val"]
+    f = pd.read_pickle(OPD / FORECAST_FILE)["val"]
+    exceeded = (f.y > f.q90).mean()
+    if abs(exceeded - ANTON_P90_EXCEEDED) > 0.005:
+        print(f"WARNING: {FORECAST_FILE} has P90 exceeded in {exceeded:.1%} of hours, not Anton's 8.5%; "
+              "check this is still his final forecast.")
     hc = pd.read_parquet(OPD / "cache/hourly_calls.parquet")
     lo, hi = pd.Timestamp("2024-01-01", tz=TZ), pd.Timestamp("2024-06-22", tz=TZ)
     cad24 = hc[(hc.index >= lo) & (hc.index < hi)].calls.groupby(lambda t: t.hour).sum()
@@ -242,10 +259,12 @@ def chart_required_vs_current(hr, officers):
     h2, l2 = ax3.get_legend_handles_labels()
     a2.legend(h1 + h2, l1 + l2, loc="upper left", fontsize=8.5, frameon=False)
     xticks(a2)
-    headline(fig, "OPD's minimum is 2–3 call takers short of the 90%/15 s standard at most hours — worst 6–10am",
-             "Average day, Jul 2025 – Jun 2026 forecast (Anton's model, P90). Erlang C, CalOES standard: 90% of 911 calls answered within 15 s.")
+    headline(fig, "With realistic breaks and wrap-up, OPD's minimum is 2–3 call takers short at most hours — worst 6–10am",
+             "Average day, Jul 2025 – Jun 2026 back-tested forecast (Anton's model, P90). Erlang C, CalOES standard: 90% of 911 calls within 15 s. Without breaks/wrap-up (blue) only 5–8am is short.")
     fig.text(0.01, 0.01, "Sources: forecast cache/bt_glm_a36ba550a4.pkl; 911-line conversion from 2024_answer_time.csv; talk time = San Francisco 2023 (audit Exhibit 49); "
-             "current = audit Exhibit 19; officers = opd_patrol_officers_by_shift_day.csv.", fontsize=7.5, color="#555")
+             "current = audit Exhibit 19; officers = opd_patrol_officers_by_shift_day.csv.\n"
+             "Call takers = the audit's estimate of 911-allocated call takers ((total minimum staffing - 4 radio/service-desk) / 2); radio and service desks are not modeled.",
+             fontsize=7.5, color="#555")
     return save(fig, "sched_1_required_vs_current.png")
 
 
@@ -267,7 +286,7 @@ def chart_heatmap(gap):
     headline(fig, "Where the gaps are: red = understaffed, blue = more than needed",
              "Required (planning scenario) minus current minimum, by weekday and hour. Forecast P90, Jul 2025 – Jun 2026.")
     fig.text(0.01, -0.02, "Current minimum (Exhibit 19) is the same every day; required varies by day from the forecast. "
-             "Planning = 116 s talk + 30 s wrap-up, 30% shrinkage.", fontsize=7.5, color="#555")
+             "Planning = 116 s talk + 30 s wrap-up, 30% shrinkage (calibrated so today's schedule gives 77%). Call takers = audit's 911-allocated estimate (Exhibit 19).", fontsize=7.5, color="#555")
     return save(fig, "sched_2_gap_heatmap.png")
 
 
@@ -289,7 +308,7 @@ def chart_shift_plan(hr, plans):
     headline(fig, "Shift proposal: add daytime and evening shifts starting 4am, 8am, 2pm and 6pm",
              "Optimised 10-hour shift starts (≤5 start times, never fewer than 3 call takers) for the average day, planning scenario.")
     fig.text(0.01, 0.01, "FTE = added call-taker hours/day × 7 ÷ 40. Answer rates are Erlang C estimates on the forecast mean with 30% shrinkage and 146 s handling time; "
-             "the same assumptions give 77% for today's schedule vs 73–79% actually measured Jan–Jul 2026.", fontsize=7.5, color="#555")
+             "the assumptions are calibrated so today's schedule gives 77%, in line with the 73–79% measured Jan–Jul 2026 (not independently validated). Call takers = audit's 911-allocated estimate.", fontsize=7.5, color="#555")
     return save(fig, "sched_3_shift_proposal.png")
 
 
