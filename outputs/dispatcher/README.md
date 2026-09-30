@@ -35,3 +35,17 @@ Supporting: `dispatch_queue_by_hour_by_area.png` (dispatch wait by hour for P1â€
 Hourly ECaTS for 2024â€“26 (calls, answer time, abandoned calls), dispatch-center shift sheets (actual vs minimum staffing by hour),
 the dispatcher schedule by position, and the CAD unit-status log. Actual dispatchers on duty by hour would allow a real
 staffing-vs-answer-time analysis and hiring impact estimates.
+
+## Scheduling proposal (forecast-based)
+
+How many 911 call takers, starting when? Built on Anton's hourly call forecast (`oakland_911_forecast.ipynb`, cache `bt_glm_a36ba550a4.pkl`).
+Run from the repo root: `python3 dispatcher_scheduling_proposal.py` (charts), then `python3 make_proposal_pdf.py` (needs `reportlab`).
+Full write-up: [`OPD_911_Call_Taker_Scheduling_Proposal.pdf`](OPD_911_Call_Taker_Scheduling_Proposal.pdf).
+
+| Chart | Shows |
+|---|---|
+| `sched_0_forecast_shape.png` | The daily call curve from the forecast, weekday vs weekend, with the P90 band. |
+| `sched_1_required_vs_current.png` | Call takers required for 90% answered in 15 s vs OPD's current minimum; patrol officers on duty. |
+| `sched_2_gap_heatmap.png` | Shortfall by weekday and hour. |
+| `sched_3_shift_proposal.png` | Options B and C shift plans vs need. |
+| `sched_4_shift_blocks.png` | Option B shifts stacked over the call curve. |
